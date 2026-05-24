@@ -1,0 +1,53 @@
+[platformio]
+default_envs = esp32dev
+data_dir = src/data
+
+; Determinar Versión de Firmware
+; X.Y.Z
+; (X) versión mayor
+; (Y) versión menor
+; (Z) revisión
+; Alpha, Beta, RC (Alpha es una versión inestable - Beta una versión mas estable que Alpha - RC (Release Candidate) )
+; v1.0.Alpha - v1.0.a0
+; v2.1.Beta - v1.0.b1
+; v3.0-RC - v3.0.rc3
+; Fecha: Año-mes-día
+; v1.0.0a-20211102
+
+[common]
+version = -D BUILD_TAG="V1.0.a0-Build-20260311"
+lib_deps = 
+    bblanchon/ArduinoJson @ ^6.18.5
+    knolleary/PubSubClient @ ^2.8
+    paulstoffregen/Time @ ^1.6.1
+    ;me-no-dev/ESP Async WebServer@^1.2.3
+    ottowinter/ESPAsyncWebServer-esphome@^2.1.0
+ 
+; https://www.calculadoraconversor.com/hexadecimal-a-decimal/
+; Tabla de Particiones personalizadas 3985408 bytes
+;# Name,   Type, SubType, Offset,  Size, Flags
+;nvs,      data, nvs,     0x9000,   0x5000,   - 20480 bytes
+;otadata,  data, ota,     0xe000,   0x2000,   - 8192 bytes
+;ota_0,    app,  ota_0,   0x10000,  0x1E0000, - 1966080 bytes
+;ota_1,    app,  ota_1,   0x1F0000, 0x1E0000, - 1966080 bytes
+;spiffs,   data, spiffs,  0x3D0000, 0x6000,   - 24576 bytes
+
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+
+framework = arduino
+; Microcontroller
+board_build.mcu = esp32
+board_build.partitions = default_ota.csv
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+lib_deps =
+    ${common.lib_deps}
+src_build_flags = ${common.version}
+upload_protocol = esptool
+upload_speed = 921600
+monitor_speed = 115200
+upload_port = /dev/ttyUSB0 
+monitor_port = /dev/ttyUSB0 
+
+

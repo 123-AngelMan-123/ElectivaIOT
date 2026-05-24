@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Datos de Sensores</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .status.connected {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .status.disconnected {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        thead {
+            background: #667eea;
+            color: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:hover {
+            background: #f5f5f5;
+        }
+
+        tbody tr.new-data {
+            animation: highlight 1s ease;
+        }
+
+        @keyframes highlight {
+            0% {
+                background: #fff3cd;
+            }
+            100% {
+                background: white;
+            }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .update-time {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Lecturas de Sensores en Tiempo Real</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">Actualizaciones automáticas cada 2 segundos</p>
+        
+        <div class="status disconnected" id="status">
+            ⚫ Desconectado
+        </div>
+
+        <div class="controls">
+            <button id="btn-refresh">🔄 Cargar Historial</button>
+            <button id="btn-clear">🗑️ Limpiar Tabla</button>
+        </div>
+
+        <table id="tbl">
+            <thead>
+                <tr>
+                    <th>Dispositivo</th>
+                    <th>Valor 1</th>
+                    <th>Valor 2</th>
+                    <th>Valor 3</th>
+                    <th>Valor 4</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div id="noData" class="no-data">
+            Esperando datos...
+        </div>
+
+        <div class="update-time">
+            Última actualización: <span id="lastUpdate">Nunca</span>
+        </div>
+    </div>
+
+    <script>
+        const tbody = document.querySelector('#tbl tbody');
+        const btnRefresh = document.getElementById('btn-refresh');
+        const btnClear = document.getElementById('btn-clear');
+        const statusEl = document.getElementById('status');
+        const noDataEl = document.getElementById('noData');
+        const lastUpdateEl = document.getElementById('lastUpdate');
+
+        // Conectar a WebSocket
+        const socket = io();
+
+        // Eventos de conexión
+        socket.on('connect', () => {
+            console.log('Conectado al servidor por WebSocket');
+            statusEl.textContent = '🟢 Conectado en tiempo real';
+            statusEl.classList.remove('disconnected');
+            statusEl.classList.add('connected');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Desconectado del servidor');
+            statusEl.textContent = '⚫ Desconectado';
+            statusEl.classList.remove('connected');
+            statusEl.classList.add('disconnected');
+        });
+
+        // Escuchar nuevos datos del MQTT
+        socket.on('nuevoDato', (dato) => {
+            console.log('Nuevo dato recibido:', dato);
+            agregarFila(dato);
+            actualizarUltimaActualizacion();
+        });
+
+        function agregarFila(d) {
+            // Mostrar tabla si estaba vacía
+            if (tbody.children.length === 0) {
+                noDataEl.style.display = 'none';
+            }
+
+            const tr = document.createElement('tr');
+            tr.classList.add('new-data');
+            tr.innerHTML = `
+                <td><strong>${d.dispositivo_uuid || ''}</strong></td>
+                <td>${d.valor1 ?? '-'}</td>
+                <td>${d.valor2 ?? '-'}</td>
+                <td>${d.valor3 ?? '-'}</td>
+                <td>${d.valor4 ?? '-'}</td>
+                <td>${new Date(d.fecha_insercion).toLocaleString('es-ES')}</td>
+            `;
+            
+            // Insertar al principio para ver lo más reciente primero
+            tbody.insertBefore(tr, tbody.firstChild);
+
+            // Mantener solo los últimos 50 registros
+            while (tbody.children.length > 50) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+
+        function actualizarUltimaActualizacion() {
+            lastUpdateEl.textContent = new Date().toLocaleTimeString('es-ES');
+        }
+
+        async function cargarHistorial() {
+            try {
+                const res = await fetch('/api/datos?limite=20');
+                const json = await res.json();
+                tbody.innerHTML = '';
+                (json.datos || []).forEach(d => {
+                    agregarFila(d);
+                });
+                if ((json.datos || []).length === 0) {
+                    noDataEl.style.display = 'block';
+                }
+            } catch (e) {
+                console.error('Error al cargar historial:', e);
+                alert('Error al cargar el historial');
+            }
+        }
+
+        function limpiarTabla() {
+            tbody.innerHTML = '';
+            noDataEl.style.display = 'block';
+        }
+
+        btnRefresh.addEventListener('click', cargarHistorial);
+        btnClear.addEventListener('click', limpiarTabla);
+
+        // Cargar historial al iniciar
+        cargarHistorial();
+    </script>
+</body>
+</html>

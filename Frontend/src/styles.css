@@ -1,0 +1,78 @@
+:root{ --bg:#f5f7fb; --card:#ffffff; --muted:#64748b; --accent-1:#0ea5e9; --accent-2:#0ea5a4; --accent-3:#f59e0b; --accent-4:#ef4444 }
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter, system-ui, 'Segoe UI', Roboto, Arial;background:var(--bg);color:#0f1724}
+.app-root{display:flex;min-height:100vh}
+.sidebar{width:200px;background:#0b1220;color:#fff;padding:1.25rem 1rem;flex-shrink:0}
+.sidebar h2{margin:0 0 1rem;font-size:1.25rem}
+.sidebar nav button{display:block;width:100%;margin:0.35rem 0;padding:0.6rem;border:0;background:transparent;color:#cbd5e1;text-align:left;border-radius:8px;cursor:pointer}
+.sidebar nav button.active{background:rgba(255,255,255,0.03);color:#fff}
+.main-area{flex:1;padding:2rem}
+.main-area h1{font-size:2rem;margin:0 0 0.5rem}
+.main-area p{color:var(--muted);margin:0 0 1.25rem}
+.devices-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem}
+.device-card{background:var(--card);padding:1rem;border-radius:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06);border:1px solid rgba(2,6,23,0.04);max-width:520px}
+.device-card h3{margin:0 0 0.75rem;font-size:0.95rem;color:#0f1724}
+.device-title{font-size:0.95rem;margin-bottom:0.6rem}
+.values-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem}
+.value-card{background:#fbfdff;padding:0.75rem;border-radius:8px;border:1px solid rgba(2,6,23,0.04);display:flex;flex-direction:column;min-height:180px;transition:transform .12s ease,box-shadow .12s ease}
+.value-card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(15,23,42,0.08)}
+.value-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.45rem}
+.value-label{font-size:0.9rem;color:#334155}
+.value-number{font-weight:800;font-size:1.35rem;color:var(--accent-1);letter-spacing:0.2px}
+.value-chart{height:140px}
+.ts{margin-top:0.6rem;font-size:0.8rem;color:var(--muted)}
+
+/* Responsive adjustments */
+@media (max-width: 1024px){
+  .devices-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
+  .device-card{max-width:100%}
+}
+
+@media (max-width: 768px){
+  .app-root{flex-direction:column}
+  .sidebar{width:100%;display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem}
+  .sidebar nav{display:flex;gap:0.5rem}
+  .sidebar nav button{padding:0.45rem 0.6rem;border-radius:6px}
+  .main-area{padding:1rem}
+  .devices-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.6rem}
+  .values-grid{grid-template-columns:1fr}
+  .value-card{min-height:100px}
+}
+
+@media (max-width:420px){
+  .main-area h1{font-size:1.4rem}
+  .value-number{font-size:1rem}
+}
+
+/* small utility */
+.muted{color:var(--muted)}
+:root{ --bg:#f7f8fb; --card:#fff; --accent:#0b63d6 }
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial;background:var(--bg);color:#111}
+.app-root{display:flex;min-height:100vh}
+.sidebar{width:220px;background:#0f1724;color:#fff;padding:1rem}
+.sidebar h2{margin:0 0 1rem}
+.sidebar nav button{display:block;width:100%;margin:0.25rem 0;padding:0.5rem;border:0;background:transparent;color:#cbd5e1;text-align:left;border-radius:6px}
+.sidebar nav button.active{background:#14202b;color:#fff}
+.main-area{flex:1;padding:1.25rem}
+.devices-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+.device-card{background:var(--card);padding:0.75rem;border-radius:8px;box-shadow:0 1px 3px rgba(2,6,23,0.06)}
+.device-card h3{margin:0 0 0.5rem;font-size:0.95rem}
+.device-card .values{display:grid;grid-template-columns:repeat(2,1fr);gap:0.25rem;margin-bottom:0.5rem}
+.mini-chart{height:80px}
+
+.device-title{font-size:0.9rem;margin-bottom:0.6rem}
+.values-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem}
+.value-card{background:#fff;padding:0.5rem;border-radius:6px;border:1px solid #eef2f6;display:flex;flex-direction:column}
+.value-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem}
+.value-label{font-size:0.85rem;color:#334155}
+.value-number{font-weight:700;font-size:1.05rem;color:var(--accent)}
+.value-chart{height:80px}
+
+.ts{margin-top:0.6rem;font-size:0.8rem;color:#64748b}
+.controls{display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem}
+.controls select{padding:0.35rem}
+
+/* Ensure Vega container can measure available width */
+.vega-chart{width:100% !important; display:block; min-width:300px}
+.vega-chart > div{width:100% !important}

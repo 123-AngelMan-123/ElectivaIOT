@@ -1,0 +1,14 @@
+1779296033: mosquitto version 2.1.2 starting
+1779296033: Config loaded from C:\Program Files\Mosquitto\mosquitto_remote.conf.
+1779296033: Bridge support available.
+1779296033: Persistence support available.
+1779296033: TLS support available.
+1779296033: TLS-PSK support available.
+1779296033: Websockets support available.
+1779296033: Opening ipv6 listen socket on port 1883.
+1779296033: Opening ipv4 listen socket on port 1883.
+1779296033: Opening ipv4 listen socket on port 1883.
+1779296033: Error: Solo se permite un uso de cada dirección de socket (protocolo/dirección de red/puerto)
+
+1779296033: mosquitto version 2.1.2 terminating
+1779296033: Saving in-memory database to mosquitto.db.
