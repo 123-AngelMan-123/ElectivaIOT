@@ -36,6 +36,7 @@ function makeSpec(values, color){
 
 export default function Realtime({ onOpenHistorico }) {
   const [devices, setDevices] = useState({})
+  const [modalUuid, setModalUuid] = useState(null)
   const [connectionStatus, setConnectionStatus] = useState('offline')
   const [loading, setLoading] = useState(true)
   const { addToast } = useToast()
@@ -124,7 +125,9 @@ export default function Realtime({ onOpenHistorico }) {
         {Object.entries(devices).map(([uuid, info]) => (
           <div className="device-card" key={uuid}>
             <div className="device-card-header">
-              <h3 className="device-title">{uuid}</h3>
+              <button className="uuid-button" onClick={() => setModalUuid(uuid)}>
+                UUID
+              </button>
               <StatusIndicator status={info.status || 'offline'} />
             </div>
 
@@ -160,6 +163,15 @@ export default function Realtime({ onOpenHistorico }) {
           </div>
         ))}
       </div>
+      {modalUuid && (
+        <div className="uuid-modal-overlay" onClick={() => setModalUuid(null)}>
+          <div className="uuid-modal" onClick={e => e.stopPropagation()}>
+            <button className="uuid-modal-close" onClick={() => setModalUuid(null)} aria-label="Cerrar ventana">×</button>
+            <h2>UUID del dispositivo</h2>
+            <p>{modalUuid}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
