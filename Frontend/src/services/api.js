@@ -13,6 +13,11 @@ export async function getDatos({ limite = 100, desde = 0, uuid } = {}){
   return resp.data
 }
 
+export async function chatQuery(message) {
+  const resp = await API.post('/chat', { message })
+  return resp.data
+}
+
 export async function getDispositivos({ limite = 100, desde = 0 } = {}){
   const resp = await API.get('/dispositivos', { params: { limite, desde } })
   return resp.data

@@ -53,6 +53,7 @@ class Server {
          */
         this.dispositivosPath = '/api/dispositivos';
         this.datosPath        = '/api/datos';
+        this.chatPath         = '/api/chat';
 
         // Middlewares: Funciones que añaden funcionalidad al web server
         this.middlewares();
@@ -100,6 +101,7 @@ class Server {
     routes() {
         this.app.use( this.dispositivosPath, require('../routes/dispositivos'));
         this.app.use( this.datosPath,        require('../routes/datos'));
+        this.app.use( this.chatPath,         require('../routes/chat'));
     }
 
     /**

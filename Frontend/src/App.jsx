@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useTheme } from './context/ThemeContext'
 import Realtime from './pages/Realtime'
 import Historico from './pages/Historico'
+import ChatBot from './pages/ChatBot'
 
 export default function App() {
   const { isDark, toggleTheme } = useTheme()
@@ -92,12 +93,23 @@ export default function App() {
             </span>
             <span className="nav-label">Histórico</span>
           </button>
+          <button onClick={() => pushState('chatbot')} className={page==='chatbot'? 'active':''}>
+            <span className="nav-icon" aria-hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 01-2 2H9l-4 4V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                <path d="M7 8h10" />
+                <path d="M7 12h7" />
+              </svg>
+            </span>
+            <span className="nav-label">Chat Bot</span>
+          </button>
         </nav>
       </aside>
 
       <main className="main-area">
         {page === 'realtime' && <Realtime onOpenHistorico={openHistorico} />}
         {page === 'historico' && <Historico selectedDevice={selectedDevice} selectedValor={selectedValor} />}
+        {page === 'chatbot' && <ChatBot />}
       </main>
     </div>
   )
