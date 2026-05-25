@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react'
 import Chart from '../components/Chart'
 import { getDatos, getDispositivos } from '../services/api'
 
+const seriesLabels = [
+  'Valor 1 (Puerto 10V)',
+  'Valor 2 (Puerto 5V)',
+  'Valor 3 (Puerto 3.3V)',
+  'Valor 4 (Puerto X)'
+]
+
 export default function Historico({ selectedDevice: initialDevice = '', selectedValor = null }){
   const [devices, setDevices] = useState([])
   const [selected, setSelected] = useState(initialDevice)
@@ -26,6 +33,8 @@ export default function Historico({ selectedDevice: initialDevice = '', selected
   const [chartHeight, setChartHeight] = useState(820)
   const [showCount, setShowCount] = useState(2000) // how many latest points to display from fetched datos (0 = all)
   const [fetchLimit, setFetchLimit] = useState(20000) // how many points to request from API
+  const [reload, setReload] = useState(0)
+  const [dbTotal, setDbTotal] = useState(0)
 
   useEffect(() => {
     (async () => {
@@ -38,6 +47,20 @@ export default function Historico({ selectedDevice: initialDevice = '', selected
       }
     })()
   }, [])
+
+  useEffect(() => {
+    if (initialDevice) setSelected(initialDevice)
+  }, [initialDevice])
+
+  useEffect(() => {
+    if (!selectedValor) return
+    setVisible({
+      valor1: selectedValor === 1,
+      valor2: selectedValor === 2,
+      valor3: selectedValor === 3,
+      valor4: selectedValor === 4
+    })
+  }, [selectedValor])
 
   useEffect(() => {
     if (!selected) return
@@ -53,6 +76,7 @@ export default function Historico({ selectedDevice: initialDevice = '', selected
         const r = await getDatos({ limite: fetchLimit, uuid: selected })
         const list = (r.datos || []).slice().reverse()
         setDatos(list)
+        setDbTotal(r.total || 0)
       } catch (e) {
         console.error(e)
       } finally {
@@ -64,7 +88,7 @@ export default function Historico({ selectedDevice: initialDevice = '', selected
         }
       }
     })()
-  }, [selected, fetchLimit])
+  }, [selected, fetchLimit, reload])
 
   // Build multi-line spec showing valor1..valor4, and highlight selectedValor if provided
   // filter datos by selected range
@@ -81,17 +105,22 @@ export default function Historico({ selectedDevice: initialDevice = '', selected
   })()
 
   const valuesAll = datos.map(d => ({ fecha: d.fecha_insercion, valor1: Number(d.valor1), valor2: Number(d.valor2), valor3: Number(d.valor3), valor4: Number(d.valor4) }))
-  const valuesFilteredByRange = cutoff ? valuesAll.filter(v => new Date(v.fecha) >= cutoff) : valuesAll
-  // only show the latest `showCount` points to keep charts readable (0 = all)
+  const valuesChrono = valuesAll.slice().sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+  const valuesFilteredByRange = cutoff ? valuesChrono.filter(v => new Date(v.fecha) >= cutoff) : valuesChrono
   const values = (showCount && showCount > 0 && valuesFilteredByRange.length > showCount) ? valuesFilteredByRange.slice(-showCount) : valuesFilteredByRange
+  // only show the latest `showCount` points to keep charts readable (0 = all)
+  const totalCount = dbTotal
+  const sortedDates = valuesChrono.map(v => new Date(v.fecha)).filter(Boolean)
+  const earliestDate = sortedDates.length ? sortedDates[0] : null
+  const latestDate = sortedDates.length ? sortedDates[sortedDates.length - 1] : null
 
   const spec = {
     data: { values },
     layer: [
-      visible.valor1 ? { mark: { type: 'line', color: '#0ea5e9' }, encoding: { x: { field: 'fecha', type: 'temporal' }, y: { field: 'valor1', type: 'quantitative' } } } : null,
-      visible.valor2 ? { mark: { type: 'line', color: '#0ea5a4' }, encoding: { x: { field: 'fecha', type: 'temporal' }, y: { field: 'valor2', type: 'quantitative' } } } : null,
-      visible.valor3 ? { mark: { type: 'line', color: '#f59e0b' }, encoding: { x: { field: 'fecha', type: 'temporal' }, y: { field: 'valor3', type: 'quantitative' } } } : null,
-      visible.valor4 ? { mark: { type: 'line', color: '#ef4444' }, encoding: { x: { field: 'fecha', type: 'temporal' }, y: { field: 'valor4', type: 'quantitative' } } } : null
+      visible.valor1 ? { mark: { type: 'line', color: '#0ea5e9' }, encoding: { x: { field: 'fecha', type: 'temporal' }, y: { field: 'valor1', type: 'quantitative', axis: { format: '.1f' }, format: '.1f' }, tooltip: [{ field: 'valor1', type: 'quantitative', title: seriesLabels[0], format: '.1f' }] } } : null,
+      visible.valor2 ? { mark: { type: 'line', color: '#0ea5a4' }, encoding: { x: { field: 'fecha', type: 'temporal' }, y: { field: 'valor2', type: 'quantitative', axis: { format: '.1f' }, format: '.1f' }, tooltip: [{ field: 'valor2', type: 'quantitative', title: seriesLabels[1], format: '.1f' }] } } : null,
+      visible.valor3 ? { mark: { type: 'line', color: '#f59e0b' }, encoding: { x: { field: 'fecha', type: 'temporal' }, y: { field: 'valor3', type: 'quantitative', axis: { format: '.1f' }, format: '.1f' }, tooltip: [{ field: 'valor3', type: 'quantitative', title: seriesLabels[2], format: '.1f' }] } } : null,
+      visible.valor4 ? { mark: { type: 'line', color: '#ef4444' }, encoding: { x: { field: 'fecha', type: 'temporal' }, y: { field: 'valor4', type: 'quantitative', axis: { format: '.1f' }, format: '.1f' }, tooltip: [{ field: 'valor4', type: 'quantitative', title: seriesLabels[3], format: '.1f' }] } } : null
     ].filter(Boolean),
     encoding: {
       x: { field: 'fecha', type: 'temporal', title: 'Fecha' }
@@ -100,19 +129,13 @@ export default function Historico({ selectedDevice: initialDevice = '', selected
     selection: { zoom: { type: 'interval', bind: 'scales', encodings: ['x'] } }
   }
 
-  // If a specific valor is selected, create a single series spec instead (larger)
-  const singleSpec = selectedValor ? {
-    data: { values: values.map(v => ({ fecha: v.fecha, valor: v[`valor${selectedValor}`] })) },
-    mark: { type: 'line', point: true, color: ['#0ea5e9','#0ea5a4','#f59e0b','#ef4444'][selectedValor-1] },
-    encoding: {
-      x: { field: 'fecha', type: 'temporal', title: 'Fecha' },
-      y: { field: 'valor', type: 'quantitative', title: `Valor ${selectedValor}` }
-    },
-    selection: { zoom: { type: 'interval', bind: 'scales', encodings: ['x'] } }
-  } : null
-
   const downloadCSV = () => {
-    const rows = (singleSpec ? values.map(v => ({ fecha: v.fecha, valor: v.valor })) : values.map(v => ({ fecha: v.fecha, valor1: v.valor1, valor2: v.valor2, valor3: v.valor3, valor4: v.valor4 })))
+    const activeSeries = ['valor1','valor2','valor3','valor4'].filter(k => visible[k])
+    const rows = values.map(v => {
+      const row = { fecha: v.fecha }
+      activeSeries.forEach(k => { row[k] = v[k] })
+      return row
+    })
     const keys = Object.keys(rows[0] || {})
     const csv = [keys.join(',')].concat(rows.map(r => keys.map(k => r[k]).join(','))).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -126,67 +149,117 @@ export default function Historico({ selectedDevice: initialDevice = '', selected
 
   return (
     <div>
-      <h1>Históricos</h1>
-      <div className="controls">
-        <label>Dispositivo:</label>
-        <select value={selected} onChange={e => setSelected(e.target.value)}>
-          {devices.map(d => <option key={d.uuid} value={d.uuid}>{d.nombre || d.uuid}</option>)}
-        </select>
-        <div style={{marginLeft:12}}>
-          <label>Rango:</label>
-          {['1h','6h','24h','7d','all'].map(r => (
-            <button key={r} onClick={() => setRange(r)} style={{marginLeft:6, padding:'6px 8px', borderRadius:6, background: range===r ? '#0ea5e9' : 'transparent', color: range===r ? '#fff' : '#0f1724', border:'1px solid rgba(15,23,42,0.06)'}}>{r}</button>
+      <div className="page-header">
+        <div>
+          <h1>Datos Históricos</h1>
+          <p>Visualiza y analiza datos históricos de tus dispositivos</p>
+        </div>
+      </div>
+
+      <div className="historico-meta">
+        <div className="meta-card">
+          <span className="meta-label">Registros en DB</span>
+          <span className="meta-value">{totalCount}</span>
+        </div>
+        <div className="meta-card">
+          <span className="meta-label">Período guardado</span>
+          <span className="meta-value">
+            {earliestDate && latestDate
+              ? `${earliestDate.toLocaleString('es-ES')} — ${latestDate.toLocaleString('es-ES')}`
+              : 'Sin datos disponibles'}
+          </span>
+        </div>
+        <div className="meta-card">
+          <span className="meta-label">Consultados</span>
+          <span className="meta-value">{datos.length}</span>
+        </div>
+      </div>
+
+      <div className="historico-controls">
+        <div className="control-group">
+          <label className="control-label">Dispositivo:</label>
+          <select value={selected} onChange={e => setSelected(e.target.value)} className="select-input">
+            {devices.map(d => <option key={d.uuid} value={d.uuid}>{d.nombre || d.uuid}</option>)}
+          </select>
+        </div>
+
+        <div className="control-group">
+          <label className="control-label">Rango de tiempo:</label>
+          <div className="button-group">
+            {['1h','6h','24h','7d','all'].map(r => (
+              <button 
+                key={r} 
+                onClick={() => setRange(r)} 
+                className={`range-btn ${range === r ? 'active' : ''}`}
+              >
+                {r === 'all' ? 'Todo' : r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="control-group">
+          <button onClick={downloadCSV} className="btn-primary">📥 Descargar CSV</button>
+        </div>
+      </div>
+
+      <div className="series-controls">
+        <label className="control-label">Series a mostrar:</label>
+        <div className="series-checkboxes">
+          {['valor1','valor2','valor3','valor4'].map((k, idx) => (
+            <label key={k} className="checkbox-wrapper">
+              <input 
+                type="checkbox" 
+                checked={visible[k]} 
+                onChange={e => setVisible(prev => ({...prev,[k]:e.target.checked}))} 
+              />
+                  <span style={{color:['#0ea5e9','#0ea5a4','#f59e0b','#ef4444'][idx]}}>
+                    {seriesLabels[idx]}
+              </span>
+            </label>
           ))}
         </div>
-        <div style={{marginLeft:12}}>
-          <button onClick={downloadCSV} style={{padding:'6px 8px', borderRadius:6, background:'#0ea5a4', color:'#fff', border:'none'}}>Descargar CSV</button>
-        </div>
       </div>
 
-      <div style={{margin:'8px 0 12px', display:'flex', gap:12, alignItems:'center'}}>
-        <label className="muted">Series:</label>
-        {['valor1','valor2','valor3','valor4'].map((k, idx) => (
-          <label key={k} style={{display:'inline-flex',alignItems:'center',gap:6}}>
-            <input type="checkbox" checked={visible[k]} onChange={e => setVisible(prev => ({...prev,[k]:e.target.checked}))} />
-            <span style={{color:['#0ea5e9','#0ea5a4','#f59e0b','#ef4444'][idx]}}>{k}</span>
-          </label>
-        ))}
+      <div className="chart-settings">
+        <label className="control-label">
+          <span>Altura del gráfico:</span>
+          <div className="range-input-wrapper">
+            <input 
+              type="range" 
+              min={200} 
+              max={1400} 
+              value={chartHeight} 
+              onChange={e => setChartHeight(Number(e.target.value))} 
+              className="range-slider"
+            />
+            <span className="range-value">{chartHeight}px</span>
+          </div>
+        </label>
+
+        <label className="control-label">
+          <span>Mostrar puntos:</span>
+          <select value={showCount} onChange={e => setShowCount(Number(e.target.value))} className="select-input">
+            {[100,250,500,1000,2000,5000,10000].map(n => <option key={n} value={n}>{n} puntos</option>)}
+            <option value={0}>Todos</option>
+          </select>
+        </label>
+
+        <label className="control-label">
+          <span>Límite de consulta:</span>
+          <select value={fetchLimit} onChange={e => setFetchLimit(Number(e.target.value))} className="select-input">
+            {[500,1000,5000,10000,20000].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <button onClick={() => { if (selected) { setDatos([]); setReload(r => r + 1) } }} className="btn-secondary">Actualizar</button>
+        </label>
       </div>
 
-      {histLoading && <div>Cargando...</div>}
-      {!histLoading && datos.length === 0 && <div>No hay datos históricos para este dispositivo.</div>}
+      {histLoading && <div className="loading-state">Cargando datos...</div>}
+      {!histLoading && datos.length === 0 && <div className="empty-state">No hay datos históricos para este dispositivo</div>}
 
       {datos.length > 0 && (
         <>
-          <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:12}}>
-            <label style={{display:'inline-flex', alignItems:'center', gap:6}}>
-              <span className="muted">Alto:</span>
-              <input type="range" min={200} max={1400} value={chartHeight} onChange={e => setChartHeight(Number(e.target.value))} />
-              <strong>{chartHeight}px</strong>
-            </label>
-
-            <label style={{display:'inline-flex', alignItems:'center', gap:6}}>
-              <span className="muted">Mostrar:</span>
-              <select value={showCount} onChange={e => setShowCount(Number(e.target.value))}>
-                {[100,250,500,1000,2000,5000,10000].map(n => <option key={n} value={n}>{n} puntos</option>)}
-                <option value={0}>Todos</option>
-              </select>
-            </label>
-
-            <label style={{display:'inline-flex', alignItems:'center', gap:6}}>
-              <span className="muted">Pedir:</span>
-              <select value={fetchLimit} onChange={e => setFetchLimit(Number(e.target.value))}>
-                {[500,1000,5000,10000,20000].map(n => <option key={n} value={n}>{n} pedir</option>)}
-              </select>
-              <button onClick={() => { if (selected) { setDatos([]); setSelected(selected) } }} style={{marginLeft:8}}>Refrescar</button>
-            </label>
-          </div>
-
-          {singleSpec ? (
-            <Chart spec={singleSpec} height={chartHeight} />
-          ) : (
-            <Chart spec={spec} height={chartHeight} />
-          )}
+          <Chart spec={spec} height={chartHeight} />
         </>
       )}
     </div>
